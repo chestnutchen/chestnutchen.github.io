@@ -10,3 +10,6 @@ github_username:  chestnutchen
 
 # Build settings
 markdown: kramdown
+
+# Pages
+include: ['slides']

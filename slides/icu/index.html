@@ -1,0 +1,445 @@
+<!--
+    Powered By nodePPT - This is probably the best web presentation tool so far!
+    version: 1.3.5
+    site: https://github.com/ksky521/nodePPT
+-->
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>移动端图片压缩和上传 - By chestnut</title>
+    <link rel="stylesheet" media="all" href="./css/nodeppt.css">
+    <link rel="stylesheet" media="only screen and (max-device-width: 480px)" href="./css/phone.css">
+
+    <link rel="stylesheet" href="./js/highlight/styles/monokai_sublime.css">
+    <link rel="stylesheet" href="./css/font-awesome.css">
+
+<link rel="stylesheet" href="./css/theme.moon.css">
+</head>
+<body>
+<div class="slides">
+    <slides id="container">
+        <slide class="slide hasnote"><aside class="note">
+<section>
+<p>今天我讲的内容是最近做的移动端中拍照或者选择文件，然后进行图片压缩，并上传的一个功能</p>
+
+</section>
+</aside><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>移动端图片压缩和上传</h1>
+<h2>chestnut</h2>
+
+</article></section></slide>
+<slide class="slide hasnote"><aside class="note">
+<section>
+<p>讲的内容可以分为四部分，介绍一点jpeg的皮毛，可能用到的前端的特性，采取的方案和遇到的问题，最后是demo</p>
+
+</section>
+</aside><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>主要内容</h1>
+<ol>
+<li>热身（JPEG的一些内容）</li>
+<li>特性（可能用到的前端特性）</li>
+<li>方案和问题</li>
+<li>demo</li>
+</ol>
+
+</article></section></slide>
+<slide class="slide hasnote"><aside class="note">
+<section>
+<p>既然聊图片压缩，当然要先看图片的存储格式，就有这么多种，好多都没怎么用过，常见的还是jpg/png/bmp/gif，根据我测试的情况来看，几乎所有主流移动端浏览器都是拍完照就按jpg来存储的，所以后边会具体讲一下jpg
+压缩和上传的功能，主要涉及的是下边这一些特性，其实有些已经从h5的标准里边分离开来，有些根本就不在h5里边，但是这并不重要，重要的是浏览器的支持程度
+那首先还是来看jpeg吧</p>
+
+</section>
+</aside><section class="slide-wrapper"><article class="flexbox vleft">
+<h1>热身</h1>
+<ol>
+<li><p><i class="fa fa-file-image-o"></i></p>
+<blockquote>
+<p>jpg, png, bmp, tiff, gif, webp, pcx, tga, exif, fpx, svg, psd, cdr, pcd, dxf, ufo, eps, ai, raw...</p>
+</blockquote>
+</li>
+<li><p><i class="fa fa-html5"></i></p>
+<blockquote>
+<p>FileApi, Canvas, TypedArray, Xhr2, Blob...</p>
+</blockquote>
+</li>
+</ol>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><hgroup>
+<h2>JPEG</h2>
+
+</hgroup><article>
+
+<ul class="fadeIn">
+<li>是什么鬼？<ul class="rollIn">
+<li>JPEG 是Joint Photographic Experts Group（联合图像专家小组）的缩写，是第一个国际图像压缩标准。</li>
+</ul>
+</li>
+<li>压缩质量？<ul class="rollIn">
+<li>有损压缩</li>
+</ul>
+</li>
+</ul>
+
+</article></section></slide>
+<slide class="slide hasnote"><aside class="note">
+<section>
+<p>png是无损压缩，会把所有像素信息都记录下来，所以占空间大，但是在小图标方面就会很有优势。jpg的算法在高品质的情况下，和原图看起来是差不多的，但是大小会小很多。所以这也是为什么一般手机拍完照是用jpg来存储的，而专业单反相机一般用的是raw格式，连感光元件的信息都保存起来。</p>
+
+</section>
+</aside><section class="slide-wrapper"><hgroup>
+<h2>为啥选择JPEG</h2>
+
+</hgroup><article>
+
+<ol>
+<li><code>支持率高</code></li>
+<li>高质量压缩情况下<code>失真率过得去</code></li>
+<li>相比gif能保留更多的颜色，gif是256色，jpg和png是<code>1600万色</code></li>
+<li>摄影场合比png大小<code>小</code>很多</li>
+</ol>
+
+</article></section></slide>
+<slide class="slide hasnote"><aside class="note">
+<section>
+<p>我们来看一组示例，这个是jpeg压缩前后像素点的对比，左下角的像素点几乎全变了，这个是有损的特点，无法保证精确</p>
+
+</section>
+</aside><section class="slide-wrapper"><hgroup>
+<h2>示例1</h2>
+
+</hgroup><article>
+
+<p><img src="./img/jpeg.jpg" alt="jpeg示例"></p>
+
+</article></section></slide>
+<slide class="slide hasnote"><aside class="note">
+<section>
+<p>再来看另外一组图，jpg 3种质量的压缩，可以看出来，50%和100%肉眼基本是看不出什么区别的，但是大小要小很多。所以压缩的时候我们也选择压成jpeg，毕竟手机里头拿出来就是jpg</p>
+
+</section>
+</aside><section class="slide-wrapper"><hgroup>
+<h2>示例2</h2>
+
+</hgroup><article>
+
+<p><img src="./img/jpeg1.jpg" alt="jpeg示例"></p>
+
+</article></section></slide>
+<slide class="slide hasnote"><aside class="note">
+<section>
+<p>我只能说测这些国内带壳浏览器，真的很伤。先给大家一个前奏吧。</p>
+
+</section>
+</aside><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>特性们：</h1>
+<h2>带壳浏览器就是一群坑爹货</h2>
+
+</article></section></slide>
+<slide class="slide hasnote"><aside class="note">
+<section>
+<p>这是我某一题测试的场景。当时too young忘了记下来是哪个浏览器了，检查特性的时候是这样的。然后就是</p>
+
+</section>
+</aside><section class="slide-wrapper"><hgroup>
+<h2>前奏：某某浏览器（too young没有记下来）</h2>
+
+</hgroup><article>
+
+<pre><code class="javascript">alert(Blob);
+</code></pre>
+<blockquote class="flexbox vleft">
+<p>function Blob() { [native code] }</p>
+</blockquote>
+<p><br></p>
+<pre><code class="javascript">// 赞！
+</code></pre>
+<pre><code class="javascript">new Blob(); // 有些旧点的浏览器需要用BlobBuilder、安卓5以前都要加Webkit前缀
+</code></pre>
+
+</article></section></slide>
+<slide class="slide fill" style="background-image:url('./img/bg.png'); background-size:100% 100%;"><section class="slide-wrapper"></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article>
+<h2>特性的支持情况</h2>
+
+</article></section></slide>
+<slide class="slide hasnote"><aside class="note">
+<section>
+<p>FileApi是最基本的特性，因为要压缩文件需要读取到文件内容才能处理，好在这个特性基本都是支持的。</p>
+
+</section>
+</aside><section class="slide-wrapper"><hgroup>
+<h2>FileApi：</h2>
+
+</hgroup><article>
+
+<iframe data-src="http://caniuse.com/#search=FileAPI" src="about:blank;" frameborder="0" ></iframe>
+</article></section></slide>
+<slide class="slide hasnote"><aside class="note">
+<section>
+<p>canvas这个基本上不会不支持，但是，出现过一台机器上就是有个傻逼搜狗浏览器有时候好像会崩溃，跑了一下分发现canvas都有不支持的，我就没继续鸟它了。canvas主要是用来把图片数据绘制出来，绘制的时候就可以压缩尺寸，然后浏览器是有一个接口可以压缩的，但是支持的情况各式各样，比较复杂，后边会提到。</p>
+
+</section>
+</aside><section class="slide-wrapper"><hgroup>
+<h2>Canvas</h2>
+
+</hgroup><article>
+
+<iframe data-src="http://caniuse.com/#search=canvas" src="about:blank;" frameborder="0" ></iframe>
+</article></section></slide>
+<slide class="slide hasnote"><aside class="note">
+<section>
+<p>TypedArray也是个比较重要的，压缩的时候可能需要用到，上传的时候如果不支持可以fallback去传base64，但是传输的大小会大1/3。</p>
+
+</section>
+</aside><section class="slide-wrapper"><hgroup>
+<h2>TypedArray</h2>
+
+</hgroup><article>
+
+<iframe data-src="http://caniuse.com/#search=TypedArray" src="about:blank;" frameborder="0" ></iframe>
+</article></section></slide>
+<slide class="slide hasnote"><aside class="note">
+<section>
+<p>xhr2当时主要是想用cors和formdata来传二进制数据的，使用formdata的时候出了点问题，所以后来是利用它来发buffer</p>
+
+</section>
+</aside><section class="slide-wrapper"><hgroup>
+<h2>Xhr2</h2>
+
+</hgroup><article>
+
+<iframe data-src="http://caniuse.com/#search=Xhr2" src="about:blank;" frameborder="0"></iframe>
+</article></section></slide>
+<slide class="slide hasnote"><aside class="note">
+<section>
+<p>把图片数据append到formdata里边需要用到Blob，所以需要支持。安卓的平台需要加webkit前缀。</p>
+
+</section>
+</aside><section class="slide-wrapper"><hgroup>
+<h2>Blob</h2>
+
+</hgroup><article>
+
+<iframe data-src="http://caniuse.com/#search=Blob" src="about:blank;" frameborder="0" ></iframe>
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>方案和发现的问题</h1>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><hgroup>
+<h2>支持情况的分析</h2>
+
+</hgroup><article>
+
+<ul>
+<li>FileApi：<i class="fa fa-apple"></i> 6.1+，<i class="fa fa-android"></i> 3+</li>
+<li>Canvas：完全支持</li>
+<li>TypedArray：<i class="fa fa-apple"></i> 4.3+，<i class="fa fa-android"></i> 4+</li>
+<li>Xhr2：<i class="fa fa-apple"></i> 5.1+，<i class="fa fa-android"></i> 3+</li>
+<li>Blob：<i class="fa fa-apple"></i> 6.1+，<i class="fa fa-android"></i> 3+</li>
+</ul>
+<p><br>
+因为<i class="fa fa-apple"></i> 5在中国已经比较少了，<i class="fa fa-android"></i> 3是平板系统可以忽略
+<br>
+所以最终确定的支持范围：<strong><i class="fa fa-apple"></i> 6.1+</strong>，<strong><i class="fa fa-android"></i> 4+</strong></p>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><hgroup>
+<h2>最最重要的切入点：浏览器原生压缩接口</h2>
+
+</hgroup><article>
+
+<ul class="rollIn">
+<li>HTMLCanvasElement.<strong>toBlob()</strong>或HTMLCanvasElement.<strong>toDataURL()</strong>
+<br></li>
+<li><blockquote>
+<p>toBlob只有ff和ie10支持，所以最后都用了toDataURL，然后再转成Blob</p>
+</blockquote>
+</li>
+</ul>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><hgroup>
+<h2>方案1</h2>
+
+</hgroup><article>
+
+<ol class="rollIn">
+<li>利用<strong>FileApi</strong>读取到图片，格式读取为<code>dataURL</code></li>
+<li>利用<strong>Image</strong>生成一个<code>img</code>来获取图片高度和宽度</li>
+<li>将此<code>img</code>绘制到<strong>Canvas</strong>上（要旋转图片需要两个canvas）</li>
+<li>使用<strong>toDataURL</strong>接口进行压缩，再转成<code>Blob</code></li>
+<li>将<code>Blob</code>append到<strong>FormData</strong>中，由xhr发送</li>
+</ol>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><hgroup>
+<h2>方案1分析</h2>
+
+</hgroup><article>
+
+<ul>
+<li>第三步是压缩<strong>尺寸</strong>，第四步是压缩<strong>质量</strong></li>
+<li>压缩尺寸比质量的失真率会大很多，慎用</li>
+<li>要读取图片进行压缩，无法采用form提交到iframe的方式，所以采用了FormData</li>
+</ul>
+
+</article></section></slide>
+<slide class="slide hasnote"><aside class="note">
+<section>
+<p>结果方案1就是大侠请重新来过了，各种问题</p>
+
+</section>
+</aside><section class="slide-wrapper"><hgroup>
+<h2>方案1：我死得好惨...</h2>
+
+</hgroup><article>
+
+<ul>
+<li><i class="fa fa-android"></i> 的阻碍<ul class="rollIn">
+<li><strong>假装</strong>自己支持Blob、FormData</li>
+<li>toDataURL指定压缩<code>image/jpeg</code>出来是<code>png</code></li>
+<li>系统垃圾回收导致拍完照<strong>浏览器重刷</strong></li>
+<li>其他奇奇怪怪的问题(压缩卡住，发送卡住，发送空白图片)</li>
+</ul>
+</li>
+<li><i class="fa fa-apple"></i> 6、7的阻碍<ul class="rollIn">
+<li>2M大小以上图片在canvas中垂直方向会被<strong>压扁</strong></li>
+</ul>
+</li>
+</ul>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><hgroup>
+<h2>方案2</h2>
+
+</hgroup><article>
+
+<ol>
+<li>抛弃Blob、FormData</li>
+<li>引入<code>JPEGEncoder</code>，解决 <i class="fa fa-android"></i> 压出来是png的问题</li>
+<li><i class="fa fa-apple"></i> 6、7绘制时，先绘一次并计算出压扁的<strong>比率</strong>，然后通过高度<strong>拉伸</strong>可以解决问题</li>
+<li>将所有数据拼成multipart的body，转成TypedArray取出buffer发送</li>
+</ol>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><hgroup>
+<h2>js解决不了的问题</h2>
+
+</hgroup><article>
+
+<ol>
+<li>安卓系统的垃圾回收</li>
+<li>微信6.2.x拍照后必定崩溃</li>
+<li>搜狗浏览器3.8.x上传文件读取到的数据有误</li>
+<li>华为P6 cpu渣渣</li>
+<li>奇奇怪怪的浏览器</li>
+</ol>
+
+</article></section></slide>
+<slide class="slide hasnote"><aside class="note">
+<section>
+<p>这个是demo，上传到服务器会识别人民币纸币，有兴趣的可以试一下</p>
+
+</section>
+</aside><section class="slide-wrapper"><hgroup>
+<h2>demo</h2>
+
+</hgroup><article>
+
+<p><img src="./img/er.png" alt="demo"></p>
+
+</article></section></slide>
+<slide class="slide hasnote"><aside class="note">
+<section>
+<p>input、filereader、img的加载都是异步的，所以封装好的这个类的使用也是异步的，目前预览的接口还在规划，因为会影响总体的性能。</p>
+
+</section>
+</aside><section class="slide-wrapper"><hgroup>
+<h2>存在的问题</h2>
+
+</hgroup><article>
+
+<ol>
+<li>浏览器太多，版本更多，加上会假装支持，暂时无法使用检查特性的方式来fallback</li>
+<li>需要toDataURL之后才能知道是否要使用第三库再压一次</li>
+<li>接口的设计还有待完善</li>
+</ol>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article>
+<h2>Thanks</h2>
+
+</article></section></slide>
+
+
+        <!-- <slide class="slide logoslide dark nobackground">
+            <article class="flexbox vcenter">
+                <h2 style="color: white;">Powered By nodePPT v1.3.5</h2>
+            </article>
+        </slide> -->
+        <div class="slideTip" id="tip"></div>
+    </slides>
+</div>
+<canvas id="drawBoard" class="draw-board" width="900" height="700"></canvas>
+<div class="progress"><span id="progress"></span></div>
+<div id="_buttons">
+    <div class="_btn-box" id="_btn-box" style="display:none;">
+        <button class="fa fa-arrow-circle-left" id="_btn-prev"></button>
+        <button class="fa fa-arrow-circle-right" id="_btn-next"></button>
+        <button class="fa fa-paint-brush" id="_btn-brush"></button>
+        <button class="fa fa-compress" id="_btn-overview" data-toggle="fa fa-expand"></button>
+    </div>
+    <button class="fa fa-bars" id="_btn-bar"  data-toggle="fa fa-close"></button>
+</div>
+<script src="./js/mixjs/lib/mix.0.3.0.min.js"></script>
+<script>
+var base = location.protocol + '//' + location.host;
+
+var path = (location.pathname + '#').split('/').filter(function(v){
+    return !!v;
+});
+path.pop();
+path = path.join('/');
+MixJS.config({
+    baseURL: [ base, path, 'js'].join('/')+'/'
+});
+
+</script>
+<script src="./js/mixjs/lib/event/broadcast.js"></script>
+<script src="./js/nodeppt.js"></script>
+<script>
+Slide.init({
+    containerID: 'container',
+    drawBoardID: 'drawBoard',
+    slideClass: '.slide',
+    buildClass: '.build',
+    progressID: 'progress',
+    transition: 'move',
+    width: 1100,
+    dir: './',
+
+    //打开下面的注释就开启postMessage方式
+    //访问网址127.0.0.1:8080/ppt/demo#client
+    control:{
+        type: 'postMessage',
+        args:{
+            isControl:  false
+        }
+    },
+
+    tipID: 'tip'
+});
+MixJS.loadJS('highlight/highlight.pack.js',function(){
+    hljs.tabReplace = '  ';
+    hljs.initHighlightingOnLoad();
+});
+</script>
+
+
+<!--placeholder-->
+</body>
+</html>
