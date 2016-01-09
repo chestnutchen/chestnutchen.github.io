@@ -27,3 +27,10 @@ ip-down:
 
 重启vpn，搞定。
 还没买但是想买云梯vpn的同学，可以使用推荐链接**[优惠10元](http://datatz.com/?r=4d8cebe87a785e6e){:target="_blank"}**
+
+<br>
+
+----
+
+<br>
+还忘记说一个事情，由于全流量走vpn，dns会找不到内网的ip，所以一般都要把vpn的首选dns设置为公司的dns，也是挺烦的。。
