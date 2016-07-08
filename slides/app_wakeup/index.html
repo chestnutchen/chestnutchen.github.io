@@ -1,0 +1,587 @@
+<!--
+    Powered By nodePPT - This is probably the best web presentation tool so far!
+    version: 1.3.5
+    site: https://github.com/ksky521/nodePPT
+-->
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Web Browser唤起app的那些坑 - By chestnut</title>
+    <link rel="stylesheet" media="all" href="./css/nodeppt.css">
+    <link rel="stylesheet" media="only screen and (max-device-width: 480px)" href="./css/phone.css">
+    
+    <link rel="stylesheet" href="./js/highlight/styles/monokai_sublime.css">
+    <link rel="stylesheet" href="./css/font-awesome.css">
+    
+<link rel="stylesheet" href="./css/theme.moon.css">
+</head>
+<body>
+<div class="slides">
+    <slides id="container">
+        <slide class="slide hasnote"><aside class="note">
+<section>
+<p>今天我讲的内容是浏览器中唤起app的一些问题和一个目前能做到的方案</p>
+
+</section>
+</aside><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>移动端浏览器&lt;唤起app&gt;的那些坑</h1>
+<h2>chestnut</h2>
+
+</article></section></slide>
+<slide class="slide hasnote"><aside class="note">
+<section>
+<p>讲的内容分为5部分，需求，一些术语和概念，涉及的兼容性问题，最终产出的方案</p>
+
+</section>
+</aside><section class="slide-wrapper"><hgroup>
+<h1>主要内容</h1>
+
+</hgroup><article>
+
+<ul>
+<li>需求</li>
+<li>概念</li>
+<li>对比</li>
+<li>兼容性</li>
+<li>不完美方案</li>
+</ul>
+
+</article></section></slide>
+<slide class="slide" data-transition="zoomin"><section class="slide-wrapper"><article class="flexbox vright">
+<h1>需求</h1>
+<blockquote>
+<p>通过一个操作，在移动端浏览器中实现跳转到app的具体页面，如果没有安装app，自动降级到web页面</p>
+</blockquote>
+
+</article></section></slide>
+<slide class="slide" data-transition="zoomin"><aside class="note">
+<section>
+<p>最简单的唤起app，可以理解为，我在浏览器里边访问了一个URI，然后系统当前程序就自动从浏览器切换到了app，这个叫唤起。
+那么Deep Link就是在这个上边更进一步，可以直接通过一个URI深入到app的一些页面里边去。
+苹果对Deep Link的实现，在ios9之前是用 Custom URL Scheme，ios9之后新出了一个方案 Universal link。
+安卓的话，Android M 也就6.0之前，是用Intent Filter，6.0之后推出了App Links</p>
+
+</section>
+</aside><section class="slide-wrapper"><article class="flexbox vleft">
+<h1>概念</h1>
+<ol>
+<li><p>唤起app</p>
+<blockquote>
+<p>在浏览器或者Webview中，通过访问一个URI，切换到app中</p>
+</blockquote>
+</li>
+<li><p>Deep Link</p>
+<blockquote>
+<p>不仅仅是唤起app，还能直接深入到app的非主页页面上</p>
+</blockquote>
+</li>
+<li><p><i class="fa fa-apple"></i></p>
+<blockquote>
+<p>Custom URL Scheme / Universal Link (ios &gt;=9)</p>
+</blockquote>
+</li>
+<li><p><i class="fa fa-android"></i></p>
+<blockquote>
+<p>Intent Filter / App Links (android &gt;= 6.0)</p>
+</blockquote>
+</li>
+</ol>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><hgroup>
+<h1>Universal Link</h1>
+
+</hgroup><article>
+
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><hgroup>
+<h2>Universal Link</h2>
+
+</hgroup><article>
+
+<ul>
+<li>仅仅是一个普通http协议的URL<ul>
+<li><pre><code class="js">`http://www.zhihu.com/question/47582123?f3fb8ead20=b8ad30e8190556ca68d254415ea068e8
+    &amp;from=singlemessage&amp;isappinstalled=1`
+</code></pre>
+</li>
+</ul>
+</li>
+</ul>
+
+</article></section></slide>
+<slide class="slide hasnote"><aside class="note">
+<section>
+<p>首先在你的https服务器上放置这么一个文件，里边写上一些对应app要处理的path，这份文件在app安装和更新时会被下载</p>
+
+</section>
+</aside><section class="slide-wrapper"><hgroup>
+<h2>Universal Link</h2>
+
+</hgroup><article>
+
+<ul>
+<li>在HTTPS服务器提供 <span class="label label-primary">apple-app-site-association</span> 文件，比如<a href="https://www.zhihu.com/apple-app-site-association" target="_blank">知乎的</a><ul>
+<li><pre><code class="js">{
+    &quot;applinks&quot;: {
+        &quot;apps&quot;: [],
+        &quot;details&quot;: [{
+            &quot;appID&quot;: &quot;9JA89QQLNQ.com.apple.wwdc&quot;,
+            &quot;paths&quot;: [&quot;/wwdc/news/&quot;, &quot;/videos/wwdc/2015/*&quot;]
+        }, {
+            &quot;appID&quot;: &quot;ABCD1234.com.apple.wwdc&quot;,
+            &quot;paths&quot;: [&quot;*&quot;]
+        }]
+    }
+}
+</code></pre>
+</li>
+</ul>
+</li>
+</ul>
+
+</article></section></slide>
+<slide class="slide" data-transition="zoomin"><aside class="note">
+<section>
+<p>然后，开发app的时候要填一下感知的域名，要保证每个域名下都有那份文件。而且子域和主域必须要分开两条记录，比如<code>www.baidu.com</code>和<code>baidu.com</code>是两个不同记录，<code>*.baidu.com</code>无法匹配<code>baidu.com</code>。我们来看下知乎的例子</p>
+
+</section>
+</aside><section class="slide-wrapper"><hgroup>
+<h2>Universal Link</h2>
+
+</hgroup><article>
+
+<ul>
+<li>xcode开发app时添加要处理的<span class="label label-primary">applinks</span><ul>
+<li><img src="http://ecmc.bdimg.com/adtest/fe14497e8f6f1241772be31b83296c0e.png" alt=""></li>
+</ul>
+</li>
+<li>子域和主域必须要分开两条记录，比如
+<span class="label label-primary">www.baidu.com</span>
+和
+<span class="label label-primary">baidu.com</span>
+是两个不同记录，
+<span class="label label-primary">*.baidu.com</span>
+无法匹配
+<span class="label label-primary">baidu.com</span>，
+知乎的文件中就没有加入
+<span class="label label-primary">zhihu.com</span>
+大域的检测</li>
+</ul>
+
+</article></section></slide>
+<slide class="slide hasnote"><aside class="note">
+<section>
+<p>先看第一和第二个，这两个链接都是知乎的，第一个比第二个少了3w.，我们来看下他们的区别。第一个长按，没有显示其他信息，第二个长按，发现有一项在知乎中打开，说明domain被识别到了，点击直接跳转，没有询问。其他app也是，可以看下twitter的。这个也是测试universal link是不是生效的一种方案，imessage、safari这些原生应用里边也可以。</p>
+
+</section>
+</aside><section class="slide-wrapper"><hgroup>
+<h2>Universal Link Test</h2>
+
+</hgroup><article>
+
+<iframe width="854" height="480" src="https://www.youtube.com/embed/mBhcD96Ukp8" frameborder="0" allowfullscreen></iframe>
+</article></section></slide>
+<slide class="slide hasnote"><aside class="note">
+<section>
+<p>有个小插曲，之前因为找不到9.1的手机，这个其实是在9.3系统上录出来的，应该是因为我从9.1就使用过，苹果或者微信有缓存。后来我找了9.1的测试，知乎竟然改版了，而且竟然还是错的，不过表现上和这一份一致，而且录完还要加些东西嫌麻烦就直接用这一份了。要看真实9.1的我这也有。</p>
+
+</section>
+</aside><section class="slide-wrapper"><hgroup>
+<h2>Universal Link In IOS 9.1</h2>
+
+</hgroup><article>
+
+<iframe width="854" height="480" src="https://www.youtube.com/embed/I1vyAXEkqjQ" frameborder="0" allowfullscreen></iframe>
+</article></section></slide>
+<slide class="slide hasnote"><aside class="note">
+<section>
+<p>然后来看下真实9.3应该是什么样的。</p>
+
+</section>
+</aside><section class="slide-wrapper"><hgroup>
+<h2>Universal Link Above IOS 9.2</h2>
+
+</hgroup><article>
+
+<iframe width="854" height="480" src="https://www.youtube.com/embed/rP10ReOq1Yo" frameborder="0" allowfullscreen></iframe>
+</article></section></slide>
+<slide class="slide hasnote"><aside class="note">
+<section>
+<p>这是为啥？其实是ios9.2对ul做了一些升级，主要是限制一些场景的使用。4个点说下来其实也就一句话。</p>
+
+</section>
+</aside><section class="slide-wrapper"><hgroup>
+<h2>Universal Link Above IOS 9.2</h2>
+
+</hgroup><article class="rollIn">
+
+
+<p><img src="http://ecmc.bdimg.com/adtest/88eb6d3066446f9c51ccc1549b6ce9f3.jpeg" width="300px" /></p>
+<ol>
+<li>Universal Links will not work if you paste the link into the browser URL field</li>
+<li>Universal Links work with a user driven &lt;a href=&quot;...&quot;&gt; element click across domains</li>
+<li>Universal Links will not work with a user driven &lt;a href=&quot;...&quot;&gt; element click on the same domain</li>
+<li>Universal Links cannot be triggered via Javascript, unless it is part of a user action</li>
+</ol>
+<div style="margin-top: 15px">
+    <blockquote>用户点击的回调栈中触发的跨域universal link才有效</blockquote>
+</div>
+</article></section></slide>
+<slide class="slide hasnote"><aside class="note">
+<section>
+<p>所以我给知乎做了个正确的使用方式。他们至今还是没改过来。。</p>
+
+</section>
+</aside><section class="slide-wrapper"><hgroup>
+<h2>Universal Link Correct Demo</h2>
+
+</hgroup><article>
+
+<iframe width="854" height="480" src="https://www.youtube.com/embed/2zbgNBERnr4" frameborder="0" allowfullscreen></iframe>
+</article></section></slide>
+<slide class="slide hasnote"><aside class="note">
+<section>
+<p>然后我们来看universal link在安卓上的实现，叫app links</p>
+
+</section>
+</aside><section class="slide-wrapper"><hgroup>
+<h1>App Links</h1>
+
+</hgroup><article>
+
+
+</article></section></slide>
+<slide class="slide hasnote"><aside class="note">
+<section>
+<p>不过原理大致相同</p>
+
+</section>
+</aside><section class="slide-wrapper"><hgroup>
+<h2>App Links</h2>
+
+</hgroup><article>
+
+<blockquote class="flexbox vleft">
+<p>同样是一个http协议的URL</p>
+</blockquote>
+<p><br></p>
+<pre><code class="xml">&lt;activity ...&gt;
+    &lt;intent-filter android:autoVerify=&quot;true&quot;&gt;
+        &lt;action android:name=&quot;android.intent.action.VIEW&quot; /&gt;
+        &lt;category android:name=&quot;android.intent.category.DEFAULT&quot; /&gt;
+        &lt;category android:name=&quot;android.intent.category.BROWSABLE&quot; /&gt;
+        &lt;data android:scheme=&quot;http&quot; android:host=&quot;www.android.com&quot; /&gt;
+        &lt;data android:scheme=&quot;https&quot; android:host=&quot;www.android.com&quot; /&gt;
+    &lt;/intent-filter&gt;
+&lt;/activity&gt;
+</code></pre>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><hgroup>
+<h2>App Links</h2>
+
+</hgroup><article>
+
+<pre><code class="js">https://domain[:optional_port]/.well-known/assetlinks.json
+</code></pre>
+<pre><code>[{
+    &quot;relation&quot;: [&quot;delegate_permission/common.handle_all_urls&quot;],
+    &quot;target&quot;: {
+        &quot;namespace&quot;: &quot;android_app&quot;,
+        &quot;package_name&quot;: &quot;com.example&quot;,
+        &quot;sha256_cert_fingerprints&quot;: [&quot;14:6D:E9:83:C5:73:06:50:D8:EE:B9:95:2F:34:FC:64:16:A0:83:42:E6:1D:BE:A8:8A:04:96:B2:3F:CF:44:E5&quot;]
+    }
+}]
+</code></pre>
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><hgroup>
+<h2>App Links</h2>
+
+</hgroup><article>
+
+<iframe width="854" height="480" src="https://www.youtube.com/embed/Dl4G8jCwOlI" frameborder="0" allowfullscreen></iframe>
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>Custom URL Scheme &amp;&amp; Intent Filter</h1>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><hgroup>
+<h2>Custom URL Scheme</h2>
+
+</hgroup><article>
+
+<ul>
+<li>格式：<ul>
+<li><pre><code>scheme://host/path?query
+</code></pre></li>
+</ul>
+</li>
+<li>Info.plist<ul>
+<li><img src="http://www.idev101.com/code/Objective-C/custom_url_plist.png" alt=""></li>
+</ul>
+</li>
+</ul>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><hgroup>
+<h2>Intent Filter</h2>
+
+</hgroup><article>
+
+<ul>
+<li>格式：<ul>
+<li><pre><code>scheme://host/path?query
+</code></pre></li>
+</ul>
+</li>
+<li>配置：<ul>
+<li><pre><code class="xml">&lt;activity android:name=”ThirdActivity”&gt;
+    &lt;intent-filter&gt;
+        &lt;action android:name=&quot;android.intent.action.VIEW&quot; /&gt;
+        &lt;category android:name=&quot;android.intent.category.DEFAULT&quot; /&gt;
+        &lt;data android:scheme=&quot;http&quot; android:host=&quot;map.example.com&quot; /&gt;
+    &lt;/intent-filter&gt;
+    &lt;intent-filter&gt;
+        &lt;action android:name=&quot;android.intent.action.VIEW&quot; /&gt;
+        &lt;category android:name=&quot;android.intent.category.BROWSABLE&quot; /&gt;
+        &lt;data android:scheme=&quot;market&quot; android:host=&quot;example.com&quot; /&gt;
+    &lt;/intent-filter&gt;
+&lt;/activity&gt;
+</code></pre>
+</li>
+</ul>
+</li>
+</ul>
+
+</article></section></slide>
+<slide class="slide" data-transition="zoomin"><aside class="note">
+<section>
+<p>讲完概念我们看下这几个实现的一些对比</p>
+
+</section>
+</aside><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>对比</h1>
+
+</article></section></slide>
+<slide class="slide hasnote"><aside class="note">
+<section>
+<p>证书和服务器这个对一般公司倒不是什么问题。但是总的来说目前支持universal link和app links都是些比较潮流的app，百度地图都还没支持，而url scheme和intent filter因为很早就支持了现在基本上是个app都会写上。从这表能看出来，两个平台上我们光靠一种实现目前是不能覆盖的。</p>
+
+</section>
+</aside><section class="slide-wrapper"><hgroup>
+<h2>粗粒度对比</h2>
+
+</hgroup><article>
+
+<table>
+<thead>
+<tr>
+<th style="text-align:left"></th>
+<th style="text-align:center">app之外的配置</th>
+<th style="text-align:center">粒度</th>
+<th style="text-align:center">Fallback</th>
+<th style="text-align:center">app支持率</th>
+<th style="text-align:center">微信屏蔽</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">Universal Link</td>
+<td style="text-align:center">https服务器</td>
+<td  class="highlight" style="text-align:center;">路径级别</td>
+<td  class="highlight" style="text-align:center;">网页</td>
+<td style="text-align:center">低</td>
+<td  class="highlight" style="text-align:center;">无法屏蔽</td>
+</tr>
+<tr>
+<td style="text-align:left">App Links</td>
+<td style="text-align:center">https服务器</td>
+<td  class="highlight" style="text-align:center;">路径级别</td>
+<td  class="highlight" style="text-align:center;">网页</td>
+<td style="text-align:center">低</td>
+<td  class="highlight" style="text-align:center;">无法屏蔽</td>
+</tr>
+<tr>
+<td style="text-align:left">URL Scheme</td>
+<td  class="highlight" style="text-align:center;">不需要</td>
+<td style="text-align:center">协议级别</td>
+<td style="text-align:center">😱😱😡</td>
+<td  class="highlight" style="text-align:center;">高</td>
+<td style="text-align:center">屏你丫的</td>
+</tr>
+<tr>
+<td style="text-align:left">Intent Filter</td>
+<td  class="highlight" style="text-align:center;">不需要</td>
+<td style="text-align:center">协议级别</td>
+<td style="text-align:center">😱😱😱</td>
+<td  class="highlight" style="text-align:center;">高</td>
+<td style="text-align:center">屏你丫的</td>
+</tr>
+</tbody>
+</table>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article class="flexbox vcenter">
+<h1>兼容性 😇</h1>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><hgroup>
+<h2>主要兼容性问题</h2>
+
+</hgroup><article>
+
+<ul>
+<li>系统级（Universal Link 和 URL Scheme）<ul>
+<li><span class="label label-primary">iOS 9</span> 和 <span class="label label-primary">低于 iOS 9</span></li>
+<li><span class="label label-primary">Android 6.0</span> 和 <span class="label label-primary">低于 6.0</span></li>
+</ul>
+</li>
+<li>应用级<ul>
+<li><span class="label label-primary">Safari/Chrome</span>（纯浏览器应用）和 <span class="label label-primary">Baidu/QQ/UC</span>（app，壳浏览器）</li>
+</ul>
+</li>
+</ul>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><hgroup>
+<h2>一个天真的想法 (&gt;^ω^&lt;)喵</h2>
+
+</hgroup><article>
+
+<ul>
+<li>平台检测（<i class="fa fa-apple"></i>，<i class="fa fa-android"></i>）</li>
+<li>版本检测（<i class="fa fa-apple"></i> - 9.0，<i class="fa fa-android"></i> - 6.0）</li>
+<li>高版本很乖</li>
+<li>低版本的URL Scheme fallback<ul>
+<li>用以下方案检测是不是打开了app</li>
+<li>iframe或者新窗口打开，onload事件 ？？</li>
+<li>window的blur ？？</li>
+<li>document的pagehide、pageshow ？？</li>
+</ul>
+</li>
+</ul>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><hgroup>
+<h2>各种噩耗</h2>
+
+</hgroup><article>
+
+<ul>
+<li>ios9 <span class="label-danger">不支持</span> iframe打开scheme</li>
+<li>两平台的Chrome(某个版本开始) <span class="label-danger">不支持</span> iframe打开scheme</li>
+<li>每个浏览器对iframe的onload事件触发 <span class="label-danger">几乎都不一样</span></li>
+<li>Safari、Chrome因为安全问题 <span class="label-danger">无法 window.open</span></li>
+<li>壳浏览器因为Webview的实现 <span class="label-danger">无法 window.open</span></li>
+<li>壳浏览器因为Webview的实现 <span class="label-danger">不会触发 window一系列事件</span></li>
+<li>会触发 pagehide事件的 <span class="label-danger">只有Chrome，而且和要唤起的app是否在内存中有关</span></li>
+<li>微信 <span class="label-danger">屏蔽scheme</span></li>
+</ul>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><hgroup>
+<h2>各种噩耗（Safari Extra）</h2>
+
+</hgroup><article>
+
+<ul>
+<li>Safari中调用scheme成功每次都会 alert “要在xx中打开吗”</li>
+<li>Safari7、8、9对没有安装app时调用scheme失败的处理不一致<ul>
+<li>7、9 弹窗</li>
+<li>8 不弹窗</li>
+<li>7的弹窗阻塞js，9的弹窗不阻塞</li>
+</ul>
+</li>
+</ul>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><hgroup>
+<h2>不完美方案（来不及画图）</h2>
+
+</hgroup><article>
+
+<ul>
+<li>微信可以直接跳到fallback页</li>
+<li>设置一个本页面跳转到fallback页的定时器，延迟的时间可以根据统计来完善</li>
+<li>加window、document的事件，让能用的用</li>
+<li>能用iframe打开的使用iframe尝试打开</li>
+<li>直接将页面刷新到scheme的地址</li>
+</ul>
+
+</article></section></slide>
+<slide class="slide"><section class="slide-wrapper"><article>
+<h2>Thanks</h2>
+
+</article></section></slide>
+        
+
+        <!-- <slide class="slide logoslide dark nobackground">
+            <article class="flexbox vcenter">
+                <h2 style="color: white;">Powered By nodePPT v1.3.5</h2>
+            </article>
+        </slide> -->
+        <div class="slideTip" id="tip"></div>
+    </slides>
+</div>
+<canvas id="drawBoard" class="draw-board" width="900" height="700"></canvas>
+<div class="progress"><span id="progress"></span></div>
+<div id="_buttons">
+    <div class="_btn-box" id="_btn-box" style="display:none;">
+        <button class="fa fa-arrow-circle-left" id="_btn-prev"></button>
+        <button class="fa fa-arrow-circle-right" id="_btn-next"></button>
+        <button class="fa fa-paint-brush" id="_btn-brush"></button>
+        <button class="fa fa-compress" id="_btn-overview" data-toggle="fa fa-expand"></button>
+    </div>
+    <button class="fa fa-bars" id="_btn-bar"  data-toggle="fa fa-close"></button>
+</div>
+<script src="./js/mixjs/lib/mix.0.3.0.min.js"></script>
+<script>
+var base = location.protocol + '//' + location.host;
+
+var path = (location.pathname + '#').split('/').filter(function(v){
+    return !!v;
+});
+path.pop();
+path = path.join('/');
+MixJS.config({
+    baseURL: [ base, path, 'js'].join('/')+'/'
+});
+
+</script>
+<script src="./js/mixjs/lib/event/broadcast.js"></script>
+<script src="./js/nodeppt.js"></script>
+<script>
+Slide.init({
+    containerID: 'container',
+    drawBoardID: 'drawBoard',
+    slideClass: '.slide',
+    buildClass: '.build',
+    progressID: 'progress',
+    transition: 'move',
+    width: 1100,
+    dir: './',
+    
+    //打开下面的注释就开启postMessage方式
+    //访问网址127.0.0.1:8080/ppt/demo#client
+    control:{
+        type: 'postMessage',
+        args:{
+            isControl:  false
+        }
+    },
+    
+    tipID: 'tip'
+});
+MixJS.loadJS('highlight/highlight.pack.js',function(){
+    hljs.tabReplace = '  ';
+    hljs.initHighlightingOnLoad();
+});
+</script>
+
+
+<!--placeholder-->
+</body>
+</html>
