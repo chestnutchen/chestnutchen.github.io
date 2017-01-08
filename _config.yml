@@ -8,7 +8,9 @@ twitter_username: chectnut_chen
 github_username:  chestnutchen
 
 # Build settings
-markdown: kramdown
+markdown: redcarpet
+# markdown: kramdown
 
 # Pages
 include: ['slides']
+
