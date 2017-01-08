@@ -12,5 +12,6 @@ markdown: redcarpet
 # markdown: kramdown
 
 # Pages
-include: ['slides']
+include: ["slides"]
+exclude: ["slides/app_wakeup/js/highlight/*.md", "slides/icu/js/highlight/*.md"]
 
