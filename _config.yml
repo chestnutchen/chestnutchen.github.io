@@ -6,6 +6,7 @@ baseurl: "" # the subpath of your site, e.g. /blog/
 url: "http://chestnutchen.tk" # the base hostname & protocol for your site
 twitter_username: chectnut_chen
 github_username:  chestnutchen
+timezone: Europe/Amsterdam
 
 # Build settings
 markdown: redcarpet

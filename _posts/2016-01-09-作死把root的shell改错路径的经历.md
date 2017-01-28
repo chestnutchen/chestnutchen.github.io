@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "作死把root的登录shell环境改错路径的经历"
-date:   2016-01-08 22:44:15
+date:   2016-01-08 22:44:15 +0800
 categories: 折腾
 ---
 
@@ -22,18 +22,18 @@ categories: 折腾
 
 然后突然发现了**`pkexec`**这个命令
 
-    pkexec allows an authorized user to execute PROGRAM as another user. 
+    pkexec allows an authorized user to execute PROGRAM as another user.
     If username is not specified, then the program will be executed as the
     administrative super user, root.
-    
+
     pkexec允许一个合法的用户以另外一个用户的权限执行程序。
     如果没有明确指定用户名，那就会以管理员也就是root用户来执行程序。
-    
+
 感觉就是专门为这种场景而生的有木有！绕开了root的登录shell，直接
 
     pkexec bash
 
-    
+
 然后输入root的密码，搞定，赶紧修改把root的登录shell环境改回来。。
 
 
