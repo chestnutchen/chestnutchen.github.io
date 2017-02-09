@@ -24,7 +24,7 @@ categories: 基础
 首先，这是考察`DOM`树增删改查的增，很明显的数据结构入门题目。一般不要修改原生类型，所以尽量不要直接在`Node.prototype`上直接挂。那么实现一个工具函数，我的思路如下
 
 1. 审题，`insertAfter`是插入到当前节点后边，即插入一个同父节点的兄弟节点，参数需要一个新节点`newNode`，一个当前节点`curNode`，均为必传
-1. 溯源，`DOM`树是一棵有部分特定结构的多叉树，树插入同级别节点需要通过`parent`指针来操作
+1. 溯源，`DOM`树是一棵有部分特定结构的多叉树，树插入同级别节点需要通过`parentNode`指针来操作
 2. 分析，多叉树的后代节点一般是一个容器，或者我们直接当成数组，可以分为三种情况
     - 在头部插入（特殊）
     - 在中间插入（大多数情况）
@@ -58,17 +58,17 @@ function insertAfter(newNode, curNode) {
         throw new Error('参数有误');
     }
 
-    if (!curNode.parent) {
+    if (!curNode.parentNode) {
         // 顶级节点不应该支持
         throw new Error('当前节点不支持该方法');
     }
 
-    let {parent} = curNode;
-    if (parent.lastChild === curNode) {
-        parent.appendChild(newNode);
+    let {parentNode} = curNode;
+    if (parentNode.lastChild === curNode) {
+        parentNode.appendChild(newNode);
     }
     else {
-        parent.insertBefore(newNode, curNode.nextSibling);
+        parentNode.insertBefore(newNode, curNode.nextSibling);
     }
 }
 ```
